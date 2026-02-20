@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Pulse News</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #e74c3c;
+            --bg: #f4f7f6;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            background-color: var(--bg);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            color: #333;
+        }
+
+        .header {
+            background: var(--primary);
+            color: white;
+            padding: 2rem 1rem;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: -30px auto 40px;
+            padding: 0 20px;
+        }
+
+        .search-box {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+        }
+
+        select, button {
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        select {
+            border: 2px solid #ddd;
+            flex-grow: 1;
+            max-width: 400px;
+            cursor: pointer;
+        }
+
+        button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        button:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+
+        #newsGrid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 40px;
+        }
+
+        .news-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .news-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .news-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background: #eee;
+        }
+
+        .news-content {
+            padding: 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .news-title {
+            font-size: 1.2rem;
+            margin: 0 0 10px 0;
+            color: var(--primary);
+            line-height: 1.4;
+        }
+
+        .news-desc {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .news-footer {
+            margin-top: auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: #999;
+        }
+
+        .status-msg {
+            text-align: center;
+            grid-column: 1 / -1;
+            padding: 40px;
+            font-size: 1.2rem;
+            color: #7f8c8d;
+        }
+
+        .read-more {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        @media (max-width: 600px) {
+            .search-box { flex-direction: column; }
+            select { max-width: 100%; width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Global Pulse News</h1>
+        <p>Stay updated with the latest headlines</p>
+    </div>
+
+    <div class="container">
+        <div class="search-box">
+            <select id="genreInput">
+                <option value="general">General News</option>
+                <option value="business">Business</option>
+                <option value="technology">Technology</option>
+                <option value="entertainment">Entertainment</option>
+                <option value="sports">Sports</option>
+                <option value="science">Science</option>
+                <option value="health">Health</option>
+            </select>
+            <button id="fetchBtn">Get Top News</button>
+        </div>
+
+        <div id="newsGrid">
+            <div class="status-msg">Select a category and hit the button to start.</div>
+        </div>
+    </div>
+
+    <script>
+        const fetchBtn = document.getElementById('fetchBtn');
+        const genreInput = document.getElementById('genreInput');
+        const newsGrid = document.getElementById('newsGrid');
+
+        // Embedded API Key
+        const API_KEY = '0641fd33ebda294b6cd7c70b8b9550e8';
+
+        fetchBtn.addEventListener('click', async () => {
+            const genre = genreInput.value;
+
+            newsGrid.innerHTML = '<div class="status-msg">Fetching latest stories...</div>';
+
+            try {
+                // Using the GNews Top Headlines endpoint
+                const url = `https://gnews.io/api/v4/top-headlines?category=${genre}&lang=en&apikey=${API_KEY}`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.errors ? data.errors[0] : 'Failed to fetch news. Please check your API quota.');
+                }
+
+                if (data.articles.length === 0) {
+                    newsGrid.innerHTML = '<div class="status-msg">No news found for this category.</div>';
+                    return;
+                }
+
+                renderNews(data.articles);
+            } catch (error) {
+                console.error(error);
+                newsGrid.innerHTML = `<div class="status-msg" style="color: #e74c3c;">Error: ${error.message}</div>`;
+            }
+        });
+
+        function renderNews(articles) {
+            newsGrid.innerHTML = '';
+            articles.forEach(article => {
+                const card = document.createElement('div');
+                card.className = 'news-card';
+                
+                card.innerHTML = `
+                    <img class="news-image" src="${article.image || 'https://via.placeholder.com/400x200?text=No+Image'}" alt="News Image">
+                    <div class="news-content">
+                        <h3 class="news-title">${article.title}</h3>
+                        <p class="news-desc">${article.description || 'No description available for this article.'}</p>
+                        <div class="news-footer">
+                            <span>${new Date(article.publishedAt).toLocaleDateString()}</span>
+                            <a href="${article.url}" target="_blank" class="read-more">Read Full Story →</a>
+                        </div>
+                    </div>
+                `;
+                newsGrid.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>
